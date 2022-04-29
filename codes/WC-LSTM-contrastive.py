@@ -254,3 +254,33 @@ train_dataset2 = train_data_pr.batch(32).prefetch(tf.data.AUTOTUNE)
 history = encoder_with_projection_head.fit(
     train_dataset2, batch_size=batch_size, epochs=num_epochs
 )
+
+
+classifier = create_classifier(encoder, trainable=False)
+
+# Fit the model on tokens and chars
+model_claim_history = classifier.fit(train_char_token_dataset, # train on dataset of token and characters
+                              steps_per_epoch=int(0.1 * len(train_char_token_dataset)),
+                              epochs=10,
+                              validation_data=val_char_token_dataset,
+                              validation_steps=int(0.1 * len(val_char_token_dataset)))
+
+
+# Evaluate on the whole validation dataset
+classifier.evaluate(val_char_token_dataset)
+# Make predictions using the token-character model hybrid
+claim_model_pred_probs = classifier.predict(val_char_token_dataset)
+# Turn prediction probabilities into prediction classes
+claim_model_preds = tf.argmax(claim_model_pred_probs, axis=1)
+# Get results of token-char-hybrid model
+claim_model_results = calculate_results(y_true=claim_val_labels_encoded,y_pred=claim_model_preds)
+print(claim_model_results)
+# Evaluate on the whole test dataset
+classifier.evaluate(test_char_token_dataset)
+# Make predictions using the token-character model hybrid
+claim_model_pred_probs = classifier.predict(test_char_token_dataset)
+# Turn prediction probabilities into prediction classes
+claim_model_preds = tf.argmax(claim_model_pred_probs, axis=1)
+# Get results of token-char-hybrid model
+claim_model_results = calculate_results(y_true=claim_test_labels_encoded,y_pred=claim_model_preds)
+print(claim_model_results)
